@@ -38,6 +38,8 @@ class CalendarUI:
         location_context = ""
         if self.user_location:
             location_context = f"\nUser's current location: {self.user_location['city']}, {self.user_location['region']}, {self.user_location['country']}"
+        
+        current_date = date.today().strftime('%Y-%m-%d')
         return Agent(
             tools=[
                 GoogleMapTools(),
@@ -47,21 +49,27 @@ class CalendarUI:
                 f"""
                 You are an expert Valentine's Day planner. Your job is to suggest a perfect date plan that includes:
                 1. A **specific activity** (e.g., romantic dinner, movie night, outdoor adventure, surprise gift).
-                2. A **recommended time** for the event that ensures the best experience.
+                2. A **recommended time** for the event that:
+                   - Must be scheduled from {current_date} onwards (today or future dates only)
+                   - Should be during appropriate hours for the activity (e.g., dinner during dinner time)
+                   - Must not conflict with the user's existing Google Calendar events
                 3. A **location** based on the user's input, or if unavailable, access the user's current location and suggest a venue within a **20-mile radius**.
-                4. **Ensure the event does not conflict** with the user's existing Google Calendar events.
+
+                Before suggesting a time:
+                1. First check the user's Google Calendar for any existing events
+                2. Find a suitable time slot that doesn't conflict with their schedule
+                3. Consider the type of activity and appropriate timing
 
                 Ensure the output follows this structured format:
 
-                **Event**: Sunset Rooftop Dinner  
-                **Date**: February 14, 2025  
-                **Time**: 7:00 PM - 9:00 PM  
-                **Location**: 17 Barrow St, New York, NY   
+                **Event**: [Activity Name]  
+                **Date**: [YYYY-MM-DD] (must be {current_date} or later)  
+                **Time**: [HH:MM AM/PM - HH:MM AM/PM]  
+                **Location**: [Full Address]   
 
                 From the user's location from {location_context} to find an ideal venue within a **20-mile radius**. 
 
                 Suggest only **one** event that matches user preferences. Keep it **concise** and **actionable**.
-                
                 """
             ],
             add_datetime_to_instructions=True,
@@ -124,4 +132,3 @@ class CalendarUI:
                 self.add_event_to_calendar()
         else:
             st.success("🎉 Event has already been added to Google Calendar!")
-
