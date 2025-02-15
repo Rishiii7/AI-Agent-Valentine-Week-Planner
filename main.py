@@ -1,14 +1,42 @@
-from agno.agent import Agent
-from agno.models.openai import OpenAIChat
-from agno.tools.duckduckgo import DuckDuckGoTools
+# main.py
+import streamlit as st
+from quiz_class import QuizUI
+from calendar_class import CalendarUI
 
-agent = Agent(
-    model=OpenAIChat(id="gpt-4o"),
-    description="You are an enthusiastic, loveable dating coach can you suugest some gifts from Amazon, walmart, Target. Also get the link of thosse gifts. Range of the gifts can be anywhere from 0-1000 USD",
-    tools=[DuckDuckGoTools()],
-    show_tool_calls=True,
-    markdown=True
-)
-agent.print_response("What should I gift my girlfriend", stream=True)
+def main():
+    st.title("Valentine's Day Planning Suite 💘")
+    
+    # Initialize classes
+    quiz = QuizUI()
+    calendar = CalendarUI()
+    
+    # Initialize session state
+    if 'current_view' not in st.session_state:
+        st.session_state.current_view = None
 
-# You are an enthusiastic, loveable dating coach can you suugest some gifts from Amazon, walmart, Target. Also get the link of thosse gifts. Range of the gifts can be anywhere from 0-1000 USD
+    # Navigation buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Gift Quiz", use_container_width=True):
+            st.session_state.current_view = "quiz"
+            st.rerun()
+    with col2:
+        if st.button("Date Planner", use_container_width=True):
+            st.session_state.current_view = "calendar"
+            st.rerun()
+
+    # Render current view
+    if st.session_state.current_view == "quiz":
+        quiz.render()
+    elif st.session_state.current_view == "calendar":
+        calendar.render()
+    else:
+        st.write("👆 Select an option above to get started!")
+
+    # Display gift suggestions in calendar view if available
+    if st.session_state.current_view == "calendar" and 'gift_suggestions' in st.session_state:
+        with st.expander("View Your Gift Suggestions"):
+            st.markdown(st.session_state.gift_suggestions)
+
+if __name__ == "__main__":
+    main()
