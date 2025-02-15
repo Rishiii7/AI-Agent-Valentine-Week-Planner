@@ -1,135 +1,106 @@
-# import os
-# from openai import OpenAI
-
-# client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-# print(os.environ["OPENAI_API_KEY"])
-# import pickle
-# import datetime
-# from google.oauth2.credentials import Credentials
-# from google_auth_oauthlib.flow import InstalledAppFlow
-# from googleapiclient.discovery import build
-# from googleapiclient.errors import HttpError
-
-# # Set your OpenAI API key
-
-# # Google Calendar API credentials file
-# CLIENT_SECRET_FILE = 'client_secret_418230902377-2v2j84in50ct5jm216139mlqpbpmh5r8.apps.googleusercontent.com.json'
-# API_NAME = 'calendar'
-# API_VERSION = 'v3'
-# SCOPES = ['https://www.googleapis.com/auth/calendar']
-
-# # Authenticate Google Calendar API
-# def authenticate_google_account():
-#     creds = None
-#     if os.path.exists('token.pickle'):
-#         with open('token.pickle', 'rb') as token:
-#             creds = pickle.load(token)
-
-#     if not creds or not creds.valid:
-#         flow = InstalledAppFlow.from_client_secrets_file(
-#             CLIENT_SECRET_FILE, SCOPES)
-#         creds = flow.run_local_server(port=0)
-#         with open('token.pickle', 'wb') as token:
-#             pickle.dump(creds, token)
-
-#     service = build(API_NAME, API_VERSION, credentials=creds)
-#     return service
-
-# # Create event in Google Calendar
-# def create_google_event(service, event_title, event_start, event_end, event_description=None):
-#     event = {
-#         'summary': event_title,
-#         'location': '',
-#         'description': event_description,
-#         'start': {
-#             'dateTime': event_start,
-#             'timeZone': 'America/New_York',
-#         },
-#         'end': {
-#             'dateTime': event_end,
-#             'timeZone': 'America/New_York',
-#         },
-#         'reminders': {
-#             'useDefault': True,
-#         },
-#     }
-
-#     try:
-#         event_result = service.events().insert(
-#             calendarId='primary', body=event).execute()
-#         print(f"Event created: {event_result.get('htmlLink')}")
-#     except HttpError as error:
-#         print(f"An error occurred: {error}")
-
-# # Use GPT-4 to parse and generate event details
-# def parse_event_request(event_request):
-#     response = client.chat.completions.create(model="gpt-4",
-#     messages=[
-#         {"role": "system", "content": "You are an AI assistant that extracts event details (title, date, and time) from user messages."},
-#         {"role": "user", "content": f"Extract the date, time, and event details from this request: '{event_request}'. Return output in this format: 'Event: <title>, Date: <YYYY-MM-DD>, Time: <HH:MM>'"}
-#     ],
-#     temperature=0.5)
-
-#     result = response.choices[0].message.content.strip()
-#     # print(result)
-#     return result
-
-# def main():
-#     # Authenticate and build the Google Calendar API service
-#     service = authenticate_google_account()
-
-#     # Input from user (This can be more dynamic based on AI interpretation)
-#     user_input = input("What event would you like to add to your calendar? \n-> ")
-
-#     # Get event details from GPT-4
-#     event_details = parse_event_request(user_input)
-#     print(event_details)
-#     # Extract start time, end time, and event title from the parsed result
-#     try:
-#         details = {}
-#         for item in event_details.split(","):
-#             k,v = item.split(":", 1)
-#             print(k.strip(), v.strip())
-#             details[k.strip()] = v.strip()
-
-#         # details = {k.strip(): v.strip() for k, v = item.split(":") for item in event_details.split(",")}
-#         print(details)
-#         event_title = details.get("Event")
-#         event_date = details.get("Date")
-#         event_time = details.get("Time")
-#         print(event_title, event_date, event_time)
-
-#         event_start = datetime.datetime.strptime(f"{event_date} {event_time}", "%Y-%m-%d %H:%M")
-#         event_end = event_start + datetime.timedelta(hours=1)  # Default event length 1 hour
-
-#         # Create the event in Google Calendar
-#         create_google_event(service, event_title, event_start.isoformat(), event_end.isoformat())
-
-#     except Exception as e:
-#         print("Error processing event details:", e)
-
-# if __name__ == '__main__':
-#     main()
-
+import streamlit as st
 from agno.agent import Agent
 from agno.tools.googlecalendar import GoogleCalendarTools
+from agno.tools.google_maps import GoogleMapTools
 import datetime
-import os
-from tzlocal import get_localzone_name
 
-agent = Agent(
-    tools=[GoogleCalendarTools(credentials_path="client_secret_418230902377-2v2j84in50ct5jm216139mlqpbpmh5r8.apps.googleusercontent.com.json")],
-    show_tool_calls=True,
-    instructions=[
-        f"""
-        You are scheduling assistant . Today is {datetime.datetime.now()} and the users timezone is {get_localzone_name()}.
-        You should help users to perform these actions in their Google calendar:
-            - get their scheduled events from a certain date and time
-            - create events based on provided details
-        """
-    ],
-    add_datetime_to_instructions=True,
-)
 
-agent.print_response("Give me the list of todays events", markdown=True)
-agent.print_response("Create a event Happy valentines day on Feb 14 8 AM to 9AM PST", markdown=True)
+# Initialize AI Agent
+def initialize_agent():
+    return Agent(
+        tools=[
+            GoogleMapTools(),
+            GoogleCalendarTools(credentials_path="client_secret_418230902377-2v2j84in50ct5jm216139mlqpbpmh5r8.apps.googleusercontent.com.json")
+        ],
+        instructions=[
+            """
+            You are an expert Valentine's Day planner. Your job is to suggest a perfect date plan that includes:
+            11. A **specific activity** (e.g., romantic dinner, movie night, outdoor adventure, surprise gift).
+            2. A **recommended time** for the event that ensures the best experience.
+            3. A **location** based on the user's input, or if unavailable, access the user's current location and suggest a venue within a **20-mile radius**.
+            4. **Ensure the event does not conflict** with the user's existing Google Calendar events.
+
+            Ensure the output follows this structured format:
+
+            **Event**: Sunset Rooftop Dinner  
+            **Date**: February 14, 2025  
+            **Time**: 7:00 PM - 9:00 PM  
+            **Location**: 17 Barrow St, New York, NY   
+
+            If the user **has not provided a location**, use their **current location** to find an ideal venue within a **20-mile radius**.
+
+            Suggest only **one** event that matches user preferences. Keep it **concise** and **actionable**.
+            """
+        ],
+        add_datetime_to_instructions=True,
+        structured_outputs=True
+    )
+
+
+# Function to parse AI-generated event details
+def parse_event_details(ai_suggestion):
+    details = {"Event": "", "Date": "", "Time": "", "Location": ""}
+    
+    for line in ai_suggestion.split("\n"):
+        for key in details.keys():
+            if line.startswith(f"**{key}**"):
+                details[key] = line.split(":", 1)[1].strip()
+
+    return details["Event"], details["Date"], details["Time"], details["Location"]
+
+
+# Streamlit UI Setup
+st.title("💖 Valentine's Week Planner 💖")
+st.write("Plan your perfect Valentine's Week with Google Calendar integration!")
+
+# Google Authentication
+if st.button("Authenticate with Google Calendar"):
+    try:
+        gcal = GoogleCalendarTools(credentials_path="client_secret.json")
+        gcal.authenticate()
+        st.success("Authenticated successfully!")
+    except Exception as e:
+        st.error(f"Authentication failed: {e}")
+
+# Initialize AI agent
+agent = initialize_agent()
+
+# Store AI suggestion in session state
+if "ai_suggestion" not in st.session_state:
+    st.session_state.ai_suggestion = None
+
+# User Input for Preferences
+preferences = st.text_area("Tell us about your Valentine's preferences (e.g., romantic dinner, movie night)")
+
+# Get AI Suggestion
+if st.button("Get AI Suggestions"):
+    try:
+        response = agent.run(f"Suggest a perfect Valentine's plan based on: {preferences}")
+        st.session_state.ai_suggestion = response.content.strip()
+
+        if st.session_state.ai_suggestion:
+            st.subheader("✨ AI Suggestion:")
+            st.write(st.session_state.ai_suggestion)
+        else:
+            st.error("Failed to generate AI suggestions. Please try again.")
+    except Exception as e:
+        st.error(f"Error generating AI suggestion: {e}")
+
+# Add Event to Google Calendar
+if st.button("Add to Google Calendar"):
+    ai_suggestion = st.session_state.ai_suggestion
+
+    if not ai_suggestion:
+        st.error("Please generate an AI suggestion before adding it to the calendar.")
+    else:
+        try:
+            event_title, event_date, event_time, location = parse_event_details(ai_suggestion)
+
+            if not all([event_title, event_date, event_time, location]):
+                st.error("AI response is incomplete. Please regenerate suggestions.")
+            else:
+                agent.run(f'create a calendar event with title "{event_title}", date "{event_date}", time "{event_time}", and location "{location}"')
+                st.success(f"AI Suggested Event '{event_title}' added to Google Calendar!")
+
+        except Exception as e:
+            st.error(f"Failed to add AI suggestion to Google Calendar: {e}")
