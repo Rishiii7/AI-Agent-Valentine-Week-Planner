@@ -3,14 +3,19 @@ from agno.agent import Agent
 from agno.tools.googlecalendar import GoogleCalendarTools
 from agno.tools.google_maps import GoogleMapTools
 import requests
+from datetime import date
 import json
 
 class CalendarUI:
     def __init__(self):
         self.user_location = self.get_user_location()
         self.agent = self.initialize_agent()
+        
+        # Initialize session state variables
         if "ai_suggestion" not in st.session_state:
             st.session_state.ai_suggestion = None
+        if "event_added" not in st.session_state:
+            st.session_state.event_added = False
 
     def get_user_location(self):
         """Get user's location using IP-based geolocation"""
@@ -53,7 +58,7 @@ class CalendarUI:
                 **Time**: 7:00 PM - 9:00 PM  
                 **Location**: 17 Barrow St, New York, NY   
 
-                From the  user's location from {location_context} to find an ideal venue within a **20-mile radius**.
+                From the user's location from {location_context} to find an ideal venue within a **20-mile radius**. 
 
                 Suggest only **one** event that matches user preferences. Keep it **concise** and **actionable**.
                 
@@ -64,43 +69,59 @@ class CalendarUI:
         )
     
     def parse_event_details(self, ai_suggestion):
+        """Extract event details from AI response"""
         details = {"Event": "", "Date": "", "Time": "", "Location": ""}
-        
         for line in ai_suggestion.split("\n"):
             for key in details.keys():
                 if line.startswith(f"**{key}**"):
                     details[key] = line.split(":", 1)[1].strip()
-        
         return details["Event"], details["Date"], details["Time"], details["Location"]
+    
+    def generate_ai_suggestion(self, quiz_data):
+        """Generate AI suggestion and store it in session state"""
+        if not st.session_state.ai_suggestion:
+            try:
+                response = self.agent.run(f"Suggest a perfect Valentine's plan based on user preference: {quiz_data}, in location: {self.user_location} and time: {date.today().strftime('%Y-%m-%d')}")
+                st.session_state.ai_suggestion = response.content.strip()
+            except Exception as e:
+                st.error(f"Error generating AI suggestion: {e}")
+    
+    def add_event_to_calendar(self):
+        """Add event to Google Calendar without regenerating the AI suggestion"""
+        ai_suggestion = st.session_state.ai_suggestion
+        
+        if not ai_suggestion:
+            st.error("Please generate an AI suggestion before adding it to the calendar.")
+            return
+
+        try:
+            event_title, event_date, event_time, location = self.parse_event_details(ai_suggestion)
+            
+            if not all([event_title, event_date, event_time, location]):
+                st.error("AI response is incomplete. Please regenerate suggestions.")
+                return
+
+            self.agent.run(f'create a calendar event with title "{event_title}", date "{event_date}", time "{event_time}", and location "{location}"')
+            st.session_state.event_added = True
+            st.success(f"✅ AI Suggested Event '{event_title}' added to Google Calendar!")
+        except Exception as e:
+            st.error(f"Failed to add AI suggestion to Google Calendar: {e}")
     
     def render(self, quiz_data):
         st.title("💖 Valentine's Week Planner 💖")
-        st.write("Plan your perfect Valentine's Week with Google Calendar integration!")
-        try:
-            response = self.agent.run(f"Suggest a perfect Valentine's plan based on: {quiz_data} and in location: {self.user_location}")
-            st.session_state.ai_suggestion = response.content.strip()
 
-            if st.session_state.ai_suggestion:
-                st.subheader("✨ AI Suggestion:")
-                st.write(st.session_state.ai_suggestion)
-            else:
-                st.error("Failed to generate AI suggestions. Please try again.")
-        except Exception as e:
-            st.error(f"Error generating AI suggestion: {e}")
-        
-        if st.button("Add to Google Calendar"):
-            ai_suggestion = st.session_state.ai_suggestion
-            
-            if not ai_suggestion:
-                st.error("Please generate an AI suggestion before adding it to the calendar.")
-            else:
-                try:
-                    event_title, event_date, event_time, location = self.parse_event_details(ai_suggestion)
-                    
-                    if not all([event_title, event_date, event_time, location]):
-                        st.error("AI response is incomplete. Please regenerate suggestions.")
-                    else:
-                        self.agent.run(f'create a calendar event with title "{event_title}", date "{event_date}", time "{event_time}", and location "{location}"')
-                        st.success(f"AI Suggested Event '{event_title}' added to Google Calendar!")
-                except Exception as e:
-                    st.error(f"Failed to add AI suggestion to Google Calendar: {e}")
+        self.generate_ai_suggestion(quiz_data)
+
+        if st.session_state.ai_suggestion:
+            st.subheader("✨ AI Suggestion:")
+            st.write(st.session_state.ai_suggestion)
+        else:
+            st.error("Failed to generate AI suggestions. Please try again.")
+
+        # Prevent Re-execution of render() on button click
+        if not st.session_state.event_added:
+            if st.button("Add to Google Calendar"):
+                self.add_event_to_calendar()
+        else:
+            st.success("🎉 Event has already been added to Google Calendar!")
+
