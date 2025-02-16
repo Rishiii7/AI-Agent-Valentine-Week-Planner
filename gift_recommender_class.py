@@ -1,56 +1,101 @@
 import streamlit as st
-from agno.agent import Agent
-from agno.models.openai import OpenAIChat
+import openai
+from serpapi import GoogleSearch
+from typing import Dict, List, Optional
 
 class GiftRecommender:
-    """Generates gift suggestions based on stored quiz responses."""
+    """Generates gift suggestions using Walmart's product catalog."""
 
     def __init__(self):
-        self.agent = self.intialize_agent()
-    
-    def intialize_agent(self):
-        return Agent(
-            model=OpenAIChat(id="gpt-4o"),
-            instructions=[
-                f"""
-                Based on the following dating personality traits, suggest 3 product categories that would make the best gifts.
+        # Initialize with SerpApi key for Walmart API
+        self.api_key = "38c3dcd13eb74956768ba45be7f362a23398fa9d55ead4fd639d4573bd4e39e5"
 
-                I have the following list of dating personality traits:
-                Ideal Date type, Love Language, Communication Style, Hobbies,  Gift Preference
+    def analyze_personality(self, quiz_data: Dict) -> List[str]:
+        """Analyze quiz responses and suggest product categories."""
+        prompt = f"""
+        Based on these personality traits from the quiz: {quiz_data},
+        suggest 3 relevant product categories that would make the best gifts.
+        Focus on specific, purchasable items that match their interests and preferences.
 
-                **Your Task:**  
-                For each category, find **exactly one relevant product** from Amazon that match the following strict criteria:
+        Rules:
+        - Suggest real, purchasable products
+        - Use specific terms (e.g., "wireless earbuds" not "electronics")
+        - Consider their love language and gift preferences
+        - Focus on items available at major retailers
 
-                1. **Relevance:** The product must clearly align with the specified personality traits.  
-                2. **Availability:** The product must be in stock and available for immediate purchase.  
-                3. **Link Validity:** Provide a verified, functional, and directly accessible product link. Ensure the link leads to the correct product and does not redirect to unrelated pages.  
-                4. **Product Quality:** Prioritize products with high ratings (4 stars or above) and multiple verified customer reviews to ensure quality.  
-                5. **Category Adherence:** Do not deviate from the listed personality traits or add additional products beyond the specified one per category.  
+        Output format: ["Category1", "Category2", "Category3"]
+        """
 
-                Your response should be structured as follows:
-
-                Category: <Category Name>  
-                1. **Product Name** - [Buy Here](Product Link)  
-                - Price: $XX.XX  
-                - Store: <Amazon/Walmart/Target/Best Buy>
-
-                **Important:**  
-                - Double-check all links for validity and relevance before submission.  
-                - If a valid product cannot be found for a category, state "**No valid products found**" and provide no substitutes.  
-                - Strictly adhere to the categories provided. Avoid any extraneous or off-topic suggestions.
-                """
+        client = openai.OpenAI()
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful gift recommendation assistant."},
+                {"role": "user", "content": prompt}
             ]
         )
 
-    def get_gift_suggestions(self, quiz_data):
         try:
-            response = self.agent.run(f"Suggest 3 Amazon product categories that would make the best gifts based on: {quiz_data}")
-            return response.content.strip() if hasattr(response, "content") else "No suggestions available."
+            categories = eval(response.choices[0].message.content)
+            return categories
+        except:
+            st.error("Error processing gift categories. Please try again.")
+            return []
+
+    def search_walmart_products(self, query: str) -> Dict:
+        """Search for products on Walmart using SerpApi."""
+        params = {
+            "api_key": self.api_key,
+            "engine": "walmart",
+            "query": query,
+            "sort": "rating_high",
+            "page": 1
+        }
+
+        search = GoogleSearch(params)
+        return search.get_dict()
+
+    def get_gift_suggestions(self, quiz_data: Dict) -> str:
+        """Get gift suggestions based on quiz responses."""
+        try:
+            # Get product categories based on personality
+            categories = self.analyze_personality(quiz_data)
+            suggestions = []
+            
+            for category in categories:
+                results = self.search_walmart_products(category)
+                
+                if "organic_results" in results and results["organic_results"]:
+                    product = results["organic_results"][0]  # Get the highest-rated product
+                    
+                    product_name = product.get('title', 'N/A')
+                    product_url = product.get('product_page_url', product.get('link', '#'))
+                    if not product_url.startswith('http'):
+                        product_url = f"https://www.walmart.com{product_url}"
+                    price = product.get('primary_offer', {}).get('offer_price', 'N/A')
+                    
+                    suggestion = f"""
+Category: {category}
+
+1. **{product_name}** - <a href="{product_url}" target="_blank">Buy Here</a>  
+   - Price: ${price}  
+   - Store: Walmart
+"""
+                    suggestions.append(suggestion)
+                else:
+                    suggestion = f"""
+Category: {category}
+No valid products found
+"""
+                    suggestions.append(suggestion)
+            
+            return "\n".join(suggestions)
+            
         except Exception as e:
             st.error(f"Error generating gift suggestions: {e}")
             return None
 
-    def render(self, quiz_data):
+    def render(self, quiz_data: Dict):
         """Displays gift recommendations based on the stored quiz responses."""
         st.subheader("🎁 Your Personalized Gift Suggestions")
         
@@ -59,8 +104,26 @@ class GiftRecommender:
             return
 
         # Generate and display gift suggestions
-        with st.spinner("Generating gift suggestions..."):
+        with st.spinner("Finding perfect gifts for you..."):
             suggestions = self.get_gift_suggestions(quiz_data)
             if suggestions:
                 st.session_state["gift_suggestions"] = suggestions
-                st.markdown(suggestions)
+                st.markdown(suggestions, unsafe_allow_html=True)
+
+                # Add feedback options
+                feedback = st.selectbox(
+                    "Are you satisfied with these suggestions?",
+                    ["Select an option", "Yes", "No"],
+                    key="feedback"
+                )
+
+                if feedback == "Yes":
+                    st.session_state.clear()
+                    st.rerun()
+                elif feedback == "No":
+                    # Keep quiz data but get new suggestions
+                    quiz_responses = st.session_state.get("responses", {})
+                    st.session_state.clear()
+                    st.session_state["responses"] = quiz_responses
+                    st.session_state["quiz_submitted"] = True
+                    st.rerun()
