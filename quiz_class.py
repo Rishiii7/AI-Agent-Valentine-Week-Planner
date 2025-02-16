@@ -27,11 +27,11 @@ class QuizHandler:
                 #     ["Dinner and a movie", "Outdoor adventure", "Coffee and deep conversation", "Fun activity like bowling or mini-golf"]
                 # ),
                 "gender": st.radio(
-                    "What's your partner'sgender?",
+                    "What's your partner's gender?",
                     ["Male", "Female", "Non-Binary", "Other"]
                 ),
                 "love_language": st.multiselect(
-                    "What's your love language?",
+                    "What's your partner's love language?",
                     ["Words of Affirmation", "Acts of Service", "Receiving Gifts", "Quality Time", "Physical Touch"]
                 ),
                 # "communication_style": st.multiselect(
@@ -44,11 +44,11 @@ class QuizHandler:
                     key="quiz_mbti"
                 ),
                 "diet_preferences": st.multiselect(
-                    "What are your diet preferences?",
+                    "What are your partner's diet preferences?",
                     ["Everything", "Vegetarian", "Vegan", "Keto", "Gluten-free", "Halal", "Sattvic"]
                 ),
                 "drink_preferences": st.multiselect(
-                    "What are your drink preferences?",
+                    "What are your partner's drink preferences?",
                     ["Cocktails", "Wines", "Beers", "Spirits", "Non-alcoholic"]
                 ),
                 "hobbies": st.text_area("What are your favorite hobbies and interests?")

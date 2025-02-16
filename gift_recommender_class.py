@@ -23,7 +23,8 @@ class GiftRecommender:
             instructions=[
                 f"""
                 You are a gift recommendation expert. Your task is to analyze personality traits
-                and suggest the most suitable gift categories.
+                of the user input and suggest the most suitable gift categories to gift to 
+                the user's romantic partner.
 
                 Based on the provided personality traits:
                 - Gender
@@ -89,7 +90,7 @@ class GiftRecommender:
         """Get gift suggestions using both AI Agent and Walmart API."""
         try:
             # Use Agno agent to analyze personality and suggest categories
-            response = self.agent.run(f"Based on these traits, suggest gift categories: {quiz_data}")
+            response = self.agent.run(f"Suggest gift categories based on user input for their partner's characteristics: {quiz_data}")
             if not hasattr(response, "content"):
                 return "No suggestions available."
             
