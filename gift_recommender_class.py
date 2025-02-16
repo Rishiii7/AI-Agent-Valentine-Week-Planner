@@ -1,46 +1,51 @@
 import streamlit as st
-import openai
+from agno.agent import Agent
+from agno.models.openai import OpenAIChat
 from serpapi import GoogleSearch
 from typing import Dict, List, Optional
 
+# load_dotenv()
+
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
 class GiftRecommender:
-    """Generates gift suggestions using Walmart's product catalog."""
+    """Generates gift suggestions using both AI Agent and Walmart's product catalog."""
 
     def __init__(self):
-        # Initialize with SerpApi key for Walmart API
-        self.api_key = "38c3dcd13eb74956768ba45be7f362a23398fa9d55ead4fd639d4573bd4e39e5"
+        self.agent = self.initialize_agent()
+        self.api_key = "38c3dcd13eb74956768ba45be7f362a23398fa9d55ead4fd639d4573bd4e39e5"  # SerpApi key for Walmart
 
-    def analyze_personality(self, quiz_data: Dict) -> List[str]:
-        """Analyze quiz responses and suggest product categories."""
-        prompt = f"""
-        Based on these personality traits from the quiz: {quiz_data},
-        suggest 3 relevant product categories that would make the best gifts.
-        Focus on specific, purchasable items that match their interests and preferences.
+    def initialize_agent(self):
+        """Initialize the Agno agent for personality analysis and category suggestions."""
+        return Agent(
+            model=OpenAIChat(id="gpt-4o"),
+            instructions=[
+                f"""
+                You are a gift recommendation expert. Your task is to analyze personality traits
+                and suggest the most suitable gift categories.
 
-        Rules:
-        - Suggest real, purchasable products
-        - Use specific terms (e.g., "wireless earbuds" not "electronics")
-        - Consider their love language and gift preferences
-        - Focus on items available at major retailers
+                Based on the provided personality traits:
+                - Ideal Date type
+                - Love Language
+                - Communication Style
+                - Hobbies
+                - Gift Preference
 
-        Output format: ["Category1", "Category2", "Category3"]
-        """
+                Suggest exactly 3 product categories that would make perfect gifts.
+                
+                Rules for suggesting categories:
+                1. Categories must be specific enough for product search (e.g., "wireless earbuds" not "electronics")
+                2. Categories should align with the person's interests and love language
+                3. Consider both practical and emotional value of the gifts
+                4. Ensure categories are available at major retailers
+                5. Categories should be diverse to give options
 
-        client = openai.OpenAI()
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a helpful gift recommendation assistant."},
-                {"role": "user", "content": prompt}
+                Output format must be exactly: ["Category1", "Category2", "Category3"]
+                This format is crucial as it will be used for product search.
+                """
             ]
         )
-
-        try:
-            categories = eval(response.choices[0].message.content)
-            return categories
-        except:
-            st.error("Error processing gift categories. Please try again.")
-            return []
 
     def search_walmart_products(self, query: str) -> Dict:
         """Search for products on Walmart using SerpApi."""
@@ -56,12 +61,24 @@ class GiftRecommender:
         return search.get_dict()
 
     def get_gift_suggestions(self, quiz_data: Dict) -> str:
-        """Get gift suggestions based on quiz responses."""
+        """Get gift suggestions using both AI Agent and Walmart API."""
         try:
-            # Get product categories based on personality
-            categories = self.analyze_personality(quiz_data)
-            suggestions = []
+            # Use Agno agent to analyze personality and suggest categories
+            response = self.agent.run(f"Based on these traits, suggest gift categories: {quiz_data}")
+            if not hasattr(response, "content"):
+                return "No suggestions available."
             
+            try:
+                # Extract categories from agent's response
+                categories = eval(response.content.strip())
+                if not isinstance(categories, list):
+                    raise ValueError("Invalid category format")
+            except:
+                st.error("Error processing agent's response. Using default categories.")
+                categories = ["gift set", "electronics", "accessories"]
+
+            # Use Walmart API to find actual products for each category
+            suggestions = []
             for category in categories:
                 results = self.search_walmart_products(category)
                 
@@ -75,18 +92,18 @@ class GiftRecommender:
                     price = product.get('primary_offer', {}).get('offer_price', 'N/A')
                     
                     suggestion = f"""
-Category: {category}
+                    Category: {category}
 
-1. **{product_name}** - <a href="{product_url}" target="_blank">Buy Here</a>  
-   - Price: ${price}  
-   - Store: Walmart
-"""
+                    1. **{product_name}** - <a href="{product_url}" target="_blank">Buy Here</a>  
+                    - Price: ${price}  
+                    - Store: Walmart
+                    """
                     suggestions.append(suggestion)
                 else:
                     suggestion = f"""
-Category: {category}
-No valid products found
-"""
+                    Category: {category}
+                    No valid products found
+                    """
                     suggestions.append(suggestion)
             
             return "\n".join(suggestions)
@@ -96,7 +113,7 @@ No valid products found
             return None
 
     def render(self, quiz_data: Dict):
-        """Displays gift recommendations based on the stored quiz responses."""
+        """Displays gift recommendations based on the quiz responses."""
         st.subheader("🎁 Your Personalized Gift Suggestions")
         
         if not st.session_state.get("quiz_submitted"):
