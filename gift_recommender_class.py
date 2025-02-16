@@ -26,11 +26,12 @@ class GiftRecommender:
                 and suggest the most suitable gift categories.
 
                 Based on the provided personality traits:
-                - Ideal Date type
+                - Gender
                 - Love Language
-                - Communication Style
+                - Myers Briggs Personality Type (MBTI)
                 - Hobbies
-                - Gift Preference
+                - Diet Preferences
+                - Drink Preferences
 
                 Suggest exactly 3 product categories that would make perfect gifts.
                 
@@ -46,7 +47,7 @@ class GiftRecommender:
                     - Think about gifts that can be enjoyed together
                     
                     3. PERSONALIZATION RULES:
-                    - Tailor to the partner's personality traits from the quiz
+                    - Tailor to the partner's preferences from the quiz
                     - Use specific terms (e.g., "Personalized Couple's Star Map" not just "Wall Art")
                     - Consider their love language and gift preferences
                     - Focus on items that combine their interests with romantic elements
