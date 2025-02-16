@@ -34,12 +34,36 @@ class GiftRecommender:
 
                 Suggest exactly 3 product categories that would make perfect gifts.
                 
-                Rules for suggesting categories:
-                1. Categories must be specific enough for product search (e.g., "wireless earbuds" not "electronics")
-                2. Categories should align with the person's interests and love language
-                3. Consider both practical and emotional value of the gifts
-                4. Ensure categories are available at major retailers
-                5. Categories should be diverse to give options
+                Key Guidelines:
+                    1. ROMANTIC FOCUS:
+                    - Each suggestion must have a romantic or emotional connection
+                    - Transform general interests into romantic gift ideas
+                    - Example: If they like outdoors, suggest "Couples Camping Hammock" instead of "Survival Kit"
+                    
+                    2. VALENTINE'S THEMES:
+                    - Incorporate elements of romance, love, or shared experiences
+                    - Consider items that create romantic moments or memories
+                    - Think about gifts that can be enjoyed together
+                    
+                    3. PERSONALIZATION RULES:
+                    - Tailor to the partner's personality traits from the quiz
+                    - Use specific terms (e.g., "Personalized Couple's Star Map" not just "Wall Art")
+                    - Consider their love language and gift preferences
+                    - Focus on items that combine their interests with romantic elements
+                    
+                    4. GIFT CATEGORIES TO PRIORITIZE:
+                    - Suggest real, purchasable products
+                    - Use specific terms (e.g., "wireless earbuds" not "electronics")
+                    - Personalized/Custom items that tell your love story
+                    - Experience gifts to share together
+                    - Romantic versions of their hobbies/interests
+                    - Sentimental keepsakes
+                    - Luxury/special occasion variants of everyday items they love
+                    
+                    5. AVOID:
+                    - Generic utility items without romantic context
+                    - Purely practical gifts without emotional significance
+                    - Standard hobby equipment without romantic customization
 
                 Output format must be exactly: ["Category1", "Category2", "Category3"]
                 This format is crucial as it will be used for product search.
