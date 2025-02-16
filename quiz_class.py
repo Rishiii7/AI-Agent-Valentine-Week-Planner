@@ -27,7 +27,7 @@ class QuizHandler:
                 #     ["Dinner and a movie", "Outdoor adventure", "Coffee and deep conversation", "Fun activity like bowling or mini-golf"]
                 # ),
                 "gender": st.radio(
-                    "What's your gender?",
+                    "What's your partner'sgender?",
                     ["Male", "Female", "Non-Binary", "Other"]
                 ),
                 "love_language": st.multiselect(
@@ -40,7 +40,7 @@ class QuizHandler:
                 # ),
                 "mbti": st.selectbox(
                     "What's your partner's MBTI type?",
-                    ["INTP", "ENTP", "INFJ", "ENFJ", "INTJ", "ENTJ", "ISFP", "ESFP", "ISTP", "ESTP", "ISFJ", "ESFJ", "ISTJ", "ESTJ"],
+                    ["ENFJ", "ENTJ", "ENTP", "ESFJ", "ESFP", "ESTJ", "ESTP", "INFJ", "INTJ", "INTP", "ISFJ", "ISFP", "ISTJ", "ISTP"],
                     key="quiz_mbti"
                 ),
                 "diet_preferences": st.multiselect(
