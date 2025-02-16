@@ -13,24 +13,50 @@ class GiftRecommender:
     def analyze_personality(self, quiz_data: Dict) -> List[str]:
         """Analyze quiz responses and suggest product categories."""
         prompt = f"""
-        Based on these personality traits from the quiz: {quiz_data},
-        suggest 3 relevant product categories that would make the best gifts.
-        Focus on specific, purchasable items that match their interests and preferences.
+        You are a romantic gift curator specializing in Valentine's Day presents. Based on these personality traits from the quiz: {quiz_data},
+        suggest 3 thoughtful, romantic product categories that would make perfect Valentine's Day gifts.
 
-        Rules:
-        - Suggest real, purchasable products
-        - Use specific terms (e.g., "wireless earbuds" not "electronics")
-        - Consider their love language and gift preferences
-        - Focus on items available at major retailers
 
+        Key Guidelines:
+        1. ROMANTIC FOCUS:
+           - Each suggestion must have a romantic or emotional connection
+           - Transform general interests into romantic gift ideas
+           - Example: If they like outdoors, suggest "Couples Camping Hammock" instead of "Survival Kit"
+        
+        2. VALENTINE'S THEMES:
+           - Incorporate elements of romance, love, or shared experiences
+           - Consider items that create romantic moments or memories
+           - Think about gifts that can be enjoyed together
+        
+        3. PERSONALIZATION RULES:
+           - Tailor to the partner's personality traits from the quiz: {quiz_data}
+           - Use specific terms (e.g., "Personalized Couple's Star Map" not just "Wall Art")
+           - Consider their love language and gift preferences
+           - Focus on items that combine their interests with romantic elements
+        
+        4. GIFT CATEGORIES TO PRIORITIZE:
+           - Suggest real, purchasable products
+           - Use specific terms (e.g., "wireless earbuds" not "electronics")
+           - Personalized/Custom items that tell your love story
+           - Experience gifts to share together
+           - Romantic versions of their hobbies/interests
+           - Sentimental keepsakes
+           - Luxury/special occasion variants of everyday items they love
+        
+        5. AVOID:
+           - Generic utility items without romantic context
+           - Purely practical gifts without emotional significance
+           - Standard hobby equipment without romantic customization
+        
         Output format: ["Category1", "Category2", "Category3"]
+        Each category should be specific and romantically oriented.
         """
 
         client = openai.OpenAI()
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a helpful gift recommendation assistant."},
+                {"role": "system", "content": "You are a romantic gift curator who specializes in transforming personal interests into thoughtful, romantic Valentine's Day gifts."},
                 {"role": "user", "content": prompt}
             ]
         )
