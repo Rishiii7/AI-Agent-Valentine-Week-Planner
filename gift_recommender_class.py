@@ -152,19 +152,19 @@ class GiftRecommender:
                 st.markdown(suggestions, unsafe_allow_html=True)
 
                 # Add feedback options
-                feedback = st.selectbox(
-                    "Are you satisfied with these suggestions?",
-                    ["Select an option", "Yes", "No"],
-                    key="feedback"
-                )
+                # feedback = st.selectbox(
+                #     "Are you satisfied with these suggestions?",
+                #     ["Select an option", "Yes", "No"],
+                #     key="feedback"
+                # )
 
-                if feedback == "Yes":
-                    st.session_state.clear()
-                    st.rerun()
-                elif feedback == "No":
-                    # Keep quiz data but get new suggestions
-                    quiz_responses = st.session_state.get("responses", {})
-                    st.session_state.clear()
-                    st.session_state["responses"] = quiz_responses
-                    st.session_state["quiz_submitted"] = True
-                    st.rerun()
+                # if feedback == "Yes":
+                #     st.session_state.clear()
+                #     st.rerun()
+                # elif feedback == "No":
+                #     # Keep quiz data but get new suggestions
+                #     quiz_responses = st.session_state.get("responses", {})
+                #     st.session_state.clear()
+                #     st.session_state["responses"] = quiz_responses
+                #     st.session_state["quiz_submitted"] = True
+                #     st.rerun()
