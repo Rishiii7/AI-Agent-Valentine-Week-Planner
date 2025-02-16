@@ -4,7 +4,6 @@ from agno.tools.googlecalendar import GoogleCalendarTools
 from agno.tools.google_maps import GoogleMapTools
 import requests
 from datetime import date
-import json
 
 class CalendarUI:
     def __init__(self):
@@ -89,7 +88,24 @@ class CalendarUI:
         """Generate AI suggestion and store it in session state"""
         if not st.session_state.ai_suggestion:
             try:
-                response = self.agent.run(f"Suggest a perfect Valentine's plan based on user preference: {quiz_data}, in location: {self.user_location} and time: {date.today().strftime('%Y-%m-%d')}")
+                # Proactively check calendar conflicts
+                conflicts = self.agent.run("Check calendar for conflicts next week")
+                
+                # Get weather forecast
+                weather = self.agent.run("Get weather forecast for potential dates")
+                
+                # Generate personalized suggestion
+                response = self.agent.run(
+                    f"""
+                    Generate a date plan considering:
+                    1. Calendar conflicts: {conflicts}
+                    2. Weather forecast: {weather}
+                    3. User preferences: {quiz_data}
+                    4. Location: {self.user_location}
+                    5. Current date: {date.today().strftime('%Y-%m-%d')}
+                    """
+                )
+                # response = self.agent.run(f"Suggest a perfect Valentine's plan based on user preference: {quiz_data}, in location: {self.user_location} and time: {date.today().strftime('%Y-%m-%d')}")
                 st.session_state.ai_suggestion = response.content.strip()
             except Exception as e:
                 st.error(f"Error generating AI suggestion: {e}")
